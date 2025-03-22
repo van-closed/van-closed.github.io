@@ -1,0 +1,658 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlightjs-line-numbers.js/2.9.0/highlightjs-line-numbers.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/languages/java.min.js"></script>
+    <script>hljs.highlightAll();hljs.initLineNumbersOnLoad({singleLine: true});</script>
+    <style>
+    body {
+        background: #bcbcbc;
+        padding: 0 24px;
+        margin: 0;
+        color: black;
+        display: flex;
+        justify-content: flex-start;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    table, th, td {
+        border: 3px solid black;
+    }
+    .header {
+        width: 100%;
+        text-align: center;
+        margin: 0 auto;
+    }
+    .table-container {
+        width: 80%;
+        margin: 0 auto;
+    }
+    table {
+        width: 100%;
+        table-layout: fixed; /* Ensures equal column distribution */
+        border-collapse: collapse;
+    }
+    th, td {
+        width: auto;
+        vertical-align: top;
+        padding: 10px;
+    }
+    pre {
+        margin: 0;
+        white-space: pre-wrap; /* Preserve formatting but allow wrapping */
+    }
+    .wrap {
+        overflow-wrap: break-word; /* Break long words */
+        word-break: break-all; /* Ensure breaks happen if needed */
+        white-space: pre-wrap;      /* Respect pre-formatted wrapping */
+    }
+    .large-code {
+        font-size: 1.2em;
+        overflow-wrap: break-word;  /* Break long words */
+        word-break: break-all;      /* Ensure breaks happen if needed */
+        white-space: pre-wrap;      /* Respect pre-formatted wrapping */
+    }
+    .header-code {
+        width: 40%;
+        overflow-x: auto;
+        margin: 0 auto;
+        padding-bottom: 15px;
+        text-align: left;
+        font-size: 1.1em;
+    }
+    .hljs-ln-numbers {
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+
+        text-align: center;
+        color: #ccc;
+        border-right: 1px solid #CCC;
+        vertical-align: top;
+        padding-right: 5px;
+
+        /* your custom style here */
+        width: 40px; /* Fixed width for line numbers */
+        min-width: 40px; /* Ensure it doesn't shrink */
+        box-sizing: border-box; /* Include padding in width */
+    }
+    /* for block of code */
+    .hljs-ln-code {
+        padding-left: 10px;
+        border: 1px solid black;
+    }
+    .seperator {
+        font-size: 1.2em;
+    }
+    .packagename {
+        color: #d70087;
+        font-size: 1.4em;
+    }
+    .filepath {
+        font-size: 1.2em;
+    }
+    </style>
+  </head>
+<div class="header">
+<h1>Originating Test:</h1>
+<h2>com.metamx.emitter.core.HttpPostEmitterStressTest#eventCountBased</h2>
+<h1>Algorithm:</h1>
+<h2>shb</h2>
+<div class="table-container"><table><thead><tr><th><h2>Project</h2</th><th><h2>Version</h2></th><th><h2>Commit</h2></tr></thead><tbody>
+<tr><td><a target="_blank" rel="noopener noreferrer" href="https://github.com/metamx/java-util.git">java-util</a></td><td>java-util-1.3.8-1-g02dccb0</td><td>02dccb0bab36c3acaa3a8911ced34c9becf2ff50</td></tr></tbody></table></div>
+<h1>Field Declaration:</h1>
+<div class="header-code">
+<pre><code class="large-code language-java nohljsln">/**
+ * The time when the first event was written into this batch, needed for timeout-based batch emitting.
+ */
+private long firstEventTimestamp = -1;
+</code></pre>
+</div>
+</div>
+
+  <body>
+    <div class="table-container">
+    <table>
+  <thead>
+    <tr>
+      <th><h2>Stack Trace 1</h2></th>
+      <th><h2>Stack Trace 2</h2></th>
+    </tr>
+  </thead>
+  <tbody>
+<tr>
+<td><strong>Depth:</strong> 4</td>
+<td><strong>Depth:</strong> 5</td>
+</tr>
+<tr>
+<td>
+<strong><code class="large-code packagename">com.metamx.emitter.core.Batch#tryAddFirstEvent:151</code></strong><br>
+<p class="filepath">java-util/src/main/java/com/metamx/emitter/core/Batch.java</p>
+<strong class="seperator">Class</strong>
+<pre><code class="language-java large-code" data-ln-start-from="25">/**
+ * Buffer for batched data + synchronization state.
+ *
+ * The state structure ({@link AbstractQueuedLongSynchronizer#state}):
+ * Bits 0-30 - bufferWatermark
+ * Bit 31 - always 0
+ * Bits 32-62 - &quot;parties&quot; (the number of concurrent writers)
+ * Bit 63 - sealed flag
+ *
+ * Writer threads (callers of {@link HttpPostEmitter#emit(Event)}) are eligible to come, increment bufferWatermark and
+ * write data into the buffer, as long as sealed flag is false.
+ *
+ * {@link HttpPostEmitter#emittingThread} is eligible to emit the buffer, when sealed flag=true and parties=0 (all
+ * writes are completed). See {@link #isEmittingAllowed(long)}.
+ *
+ * In this class, &quot;lock&quot; means &quot;increment number of parties by 1&quot;, i. e. lock the emitter thread from emitting this
+ * batch. &quot;Unlock&quot; means &quot;decrement number of parties by 1&quot;.
+ */
+class Batch extends AbstractQueuedLongSynchronizer
+{
+</code></pre>
+<strong class="seperator">Method</strong>
+<pre><code class="language-java large-code" data-ln-start-from="142">private boolean tryAddFirstEvent(byte[] event)
+  {
+    if (!tryReserveFirstEventSizeAndLock(event)) {
+      return false;
+    }
+    try {
+      int bufferOffset = emitter.batchingStrategy.writeBatchStart(buffer);
+      writeEvent(event, bufferOffset);
+      eventCount.incrementAndGet();
+      firstEventTimestamp = System.currentTimeMillis();
+      return true;
+    }
+    finally {
+      unlock();
+    }
+  }
+</code></pre>
+</td><td>
+<strong><code class="large-code packagename">com.metamx.emitter.core.Batch#unlockAndSealIfNeeded:216</code></strong><br>
+<p class="filepath">java-util/src/main/java/com/metamx/emitter/core/Batch.java</p>
+<strong class="seperator">Class</strong>
+<pre><code class="language-java large-code" data-ln-start-from="25">/**
+ * Buffer for batched data + synchronization state.
+ *
+ * The state structure ({@link AbstractQueuedLongSynchronizer#state}):
+ * Bits 0-30 - bufferWatermark
+ * Bit 31 - always 0
+ * Bits 32-62 - &quot;parties&quot; (the number of concurrent writers)
+ * Bit 63 - sealed flag
+ *
+ * Writer threads (callers of {@link HttpPostEmitter#emit(Event)}) are eligible to come, increment bufferWatermark and
+ * write data into the buffer, as long as sealed flag is false.
+ *
+ * {@link HttpPostEmitter#emittingThread} is eligible to emit the buffer, when sealed flag=true and parties=0 (all
+ * writes are completed). See {@link #isEmittingAllowed(long)}.
+ *
+ * In this class, &quot;lock&quot; means &quot;increment number of parties by 1&quot;, i. e. lock the emitter thread from emitting this
+ * batch. &quot;Unlock&quot; means &quot;decrement number of parties by 1&quot;.
+ */
+class Batch extends AbstractQueuedLongSynchronizer
+{
+</code></pre>
+<strong class="seperator">Method</strong>
+<pre><code class="language-java large-code" data-ln-start-from="210">private void unlockAndSealIfNeeded()
+  {
+    if (eventCount.incrementAndGet() &gt;= emitter.config.getFlushCount()) {
+      unlockAndSeal();
+    } else {
+      long timeSinceFirstEvent = System.currentTimeMillis() - firstEventTimestamp;
+      if (firstEventTimestamp &gt; 0 &amp;&amp; timeSinceFirstEvent &gt; emitter.config.getFlushMillis()) {
+        unlockAndSeal();
+      } else {
+        unlock();
+      }
+    }
+  }
+</code></pre>
+</td></tr>
+<tr>
+<td>
+<strong><code class="large-code packagename">com.metamx.emitter.core.Batch#tryAddEvent:128</code></strong><br>
+<p class="filepath">java-util/src/main/java/com/metamx/emitter/core/Batch.java</p>
+<strong class="seperator">Class</strong>
+<pre><code class="language-java large-code" data-ln-start-from="25">/**
+ * Buffer for batched data + synchronization state.
+ *
+ * The state structure ({@link AbstractQueuedLongSynchronizer#state}):
+ * Bits 0-30 - bufferWatermark
+ * Bit 31 - always 0
+ * Bits 32-62 - &quot;parties&quot; (the number of concurrent writers)
+ * Bit 63 - sealed flag
+ *
+ * Writer threads (callers of {@link HttpPostEmitter#emit(Event)}) are eligible to come, increment bufferWatermark and
+ * write data into the buffer, as long as sealed flag is false.
+ *
+ * {@link HttpPostEmitter#emittingThread} is eligible to emit the buffer, when sealed flag=true and parties=0 (all
+ * writes are completed). See {@link #isEmittingAllowed(long)}.
+ *
+ * In this class, &quot;lock&quot; means &quot;increment number of parties by 1&quot;, i. e. lock the emitter thread from emitting this
+ * batch. &quot;Unlock&quot; means &quot;decrement number of parties by 1&quot;.
+ */
+class Batch extends AbstractQueuedLongSynchronizer
+{
+</code></pre>
+<strong class="seperator">Method</strong>
+<pre><code class="language-java large-code" data-ln-start-from="115">  /**
+   * Tries to add (write) event to the batch, returns true, if successful. If fails, no subsequent attempts to add event
+   * to this batch will succeed, the next batch should be taken.
+   */
+boolean tryAddEvent(byte[] event)
+  {
+    while (true) {
+      long state = getState();
+      if (isSealed(state)) {
+        return false;
+      }
+      int bufferWatermark = bufferWatermark(state);
+      if (bufferWatermark == 0) {
+        if (tryAddFirstEvent(event)) {
+          return true;
+        }
+      } else if (newBufferWatermark(bufferWatermark, event) &lt;= emitter.maxBufferWatermark) {
+        if (tryAddNonFirstEvent(state, event)) {
+          return true;
+        }
+      } else {
+        seal();
+        return false;
+      }
+    }
+  }
+</code></pre>
+</td><td>
+<strong><code class="large-code packagename">com.metamx.emitter.core.Batch#tryAddNonFirstEvent:181</code></strong><br>
+<p class="filepath">java-util/src/main/java/com/metamx/emitter/core/Batch.java</p>
+<strong class="seperator">Class</strong>
+<pre><code class="language-java large-code" data-ln-start-from="25">/**
+ * Buffer for batched data + synchronization state.
+ *
+ * The state structure ({@link AbstractQueuedLongSynchronizer#state}):
+ * Bits 0-30 - bufferWatermark
+ * Bit 31 - always 0
+ * Bits 32-62 - &quot;parties&quot; (the number of concurrent writers)
+ * Bit 63 - sealed flag
+ *
+ * Writer threads (callers of {@link HttpPostEmitter#emit(Event)}) are eligible to come, increment bufferWatermark and
+ * write data into the buffer, as long as sealed flag is false.
+ *
+ * {@link HttpPostEmitter#emittingThread} is eligible to emit the buffer, when sealed flag=true and parties=0 (all
+ * writes are completed). See {@link #isEmittingAllowed(long)}.
+ *
+ * In this class, &quot;lock&quot; means &quot;increment number of parties by 1&quot;, i. e. lock the emitter thread from emitting this
+ * batch. &quot;Unlock&quot; means &quot;decrement number of parties by 1&quot;.
+ */
+class Batch extends AbstractQueuedLongSynchronizer
+{
+</code></pre>
+<strong class="seperator">Method</strong>
+<pre><code class="language-java large-code" data-ln-start-from="169">private boolean tryAddNonFirstEvent(long state, byte[] event)
+  {
+    int bufferOffset = tryReserveEventSizeAndLock(state, emitter.batchingStrategy.separatorLength() + event.length);
+    if (bufferOffset &lt; 0) {
+      return false;
+    }
+    try {
+      bufferOffset = emitter.batchingStrategy.writeMessageSeparator(buffer, bufferOffset);
+      writeEvent(event, bufferOffset);
+      return true;
+    }
+    finally {
+      unlockAndSealIfNeeded();
+    }
+  }
+</code></pre>
+</td></tr>
+<tr>
+<td>
+<strong><code class="large-code packagename">com.metamx.emitter.core.HttpPostEmitter#emitAndReturnBatch:244</code></strong><br>
+<p class="filepath">java-util/src/main/java/com/metamx/emitter/core/HttpPostEmitter.java</p>
+<strong class="seperator">Class</strong>
+<pre><code class="language-java large-code" data-ln-start-from="60">public class HttpPostEmitter implements Flushable, Closeable, Emitter
+{
+</code></pre>
+<strong class="seperator">Method</strong>
+<pre><code class="language-java large-code" data-ln-start-from="217">@VisibleForTesting
+  Batch emitAndReturnBatch(Event event)
+  {
+    awaitStarted();
+
+    final byte[] eventBytes = eventToBytes(event);
+
+    if (eventBytes.length &gt; MAX_EVENT_SIZE) {
+      log.error(
+          &quot;Event too large to emit (%,d &gt; %,d): %s ...&quot;,
+          eventBytes.length,
+          MAX_EVENT_SIZE,
+          StringUtils.fromUtf8(ByteBuffer.wrap(eventBytes), 1024)
+      );
+      return null;
+    }
+
+    if (eventBytes.length &gt; largeEventThreshold) {
+      writeLargeEvent(eventBytes);
+      return null;
+    }
+
+    while (true) {
+      Batch batch = concurrentBatch.get();
+      if (batch == null) {
+        throw new RejectedExecutionException(&quot;Service is closed.&quot;);
+      }
+      if (batch.tryAddEvent(eventBytes)) {
+        return batch;
+      }
+      // Spin loop, until the thread calling onSealExclusive() updates the concurrentBatch. This update becomes visible
+      // eventually, because concurrentBatch.get() is a volatile read.
+    }
+  }
+</code></pre>
+</td><td>
+<strong><code class="large-code packagename">com.metamx.emitter.core.Batch#tryAddEvent:132</code></strong><br>
+<p class="filepath">java-util/src/main/java/com/metamx/emitter/core/Batch.java</p>
+<strong class="seperator">Class</strong>
+<pre><code class="language-java large-code" data-ln-start-from="25">/**
+ * Buffer for batched data + synchronization state.
+ *
+ * The state structure ({@link AbstractQueuedLongSynchronizer#state}):
+ * Bits 0-30 - bufferWatermark
+ * Bit 31 - always 0
+ * Bits 32-62 - &quot;parties&quot; (the number of concurrent writers)
+ * Bit 63 - sealed flag
+ *
+ * Writer threads (callers of {@link HttpPostEmitter#emit(Event)}) are eligible to come, increment bufferWatermark and
+ * write data into the buffer, as long as sealed flag is false.
+ *
+ * {@link HttpPostEmitter#emittingThread} is eligible to emit the buffer, when sealed flag=true and parties=0 (all
+ * writes are completed). See {@link #isEmittingAllowed(long)}.
+ *
+ * In this class, &quot;lock&quot; means &quot;increment number of parties by 1&quot;, i. e. lock the emitter thread from emitting this
+ * batch. &quot;Unlock&quot; means &quot;decrement number of parties by 1&quot;.
+ */
+class Batch extends AbstractQueuedLongSynchronizer
+{
+</code></pre>
+<strong class="seperator">Method</strong>
+<pre><code class="language-java large-code" data-ln-start-from="115">  /**
+   * Tries to add (write) event to the batch, returns true, if successful. If fails, no subsequent attempts to add event
+   * to this batch will succeed, the next batch should be taken.
+   */
+boolean tryAddEvent(byte[] event)
+  {
+    while (true) {
+      long state = getState();
+      if (isSealed(state)) {
+        return false;
+      }
+      int bufferWatermark = bufferWatermark(state);
+      if (bufferWatermark == 0) {
+        if (tryAddFirstEvent(event)) {
+          return true;
+        }
+      } else if (newBufferWatermark(bufferWatermark, event) &lt;= emitter.maxBufferWatermark) {
+        if (tryAddNonFirstEvent(state, event)) {
+          return true;
+        }
+      } else {
+        seal();
+        return false;
+      }
+    }
+  }
+</code></pre>
+</td></tr>
+<tr>
+<td>
+<strong><code class="large-code packagename">com.metamx.emitter.core.HttpPostEmitterStressTest$3#run:102</code></strong><br>
+<p class="filepath">java-util/src/test/java/com/metamx/emitter/core/HttpPostEmitterStressTest.java</p>
+<strong class="seperator">Class</strong>
+<pre><code class="language-java large-code" data-ln-start-from="39">public class HttpPostEmitterStressTest
+{
+</code></pre>
+<strong class="seperator">Method</strong>
+<pre><code class="language-java large-code" data-ln-start-from="54">@Test
+  public void eventCountBased() throws InterruptedException, IOException
+  {
+    HttpEmitterConfig config = new HttpEmitterConfig.Builder(&quot;http://foo.bar&quot;)
+        .setFlushMillis(100)
+        .setFlushCount(4)
+        .setBatchingStrategy(BatchingStrategy.ONLY_EVENTS)
+        .setMaxBatchSize(1024 * 1024)
+        // For this test, we don&#x27;t need any batches to be dropped, i. e. &quot;gaps&quot; in data
+        .setBatchQueueSizeLimit(1000)
+        .build();
+    final HttpPostEmitter emitter = new HttpPostEmitter(config, httpClient, objectMapper);
+    int nThreads = Runtime.getRuntime().availableProcessors() * 2;
+    final List&lt;IntList&gt; eventsPerThread = new ArrayList&lt;&gt;(nThreads);
+    final List&lt;List&lt;Batch&gt;&gt; eventBatchesPerThread = new ArrayList&lt;&gt;(nThreads);
+    for (int i = 0; i &lt; nThreads; i++) {
+      eventsPerThread.add(new IntArrayList());
+      eventBatchesPerThread.add(new ArrayList&lt;Batch&gt;());
+    }
+    for (int i = 0; i &lt; N; i++) {
+      eventsPerThread.get(ThreadLocalRandom.current().nextInt(nThreads)).add(i);
+    }
+    final BitSet emittedEvents = new BitSet(N);
+    httpClient.setGoHandler(new GoHandler()
+    {
+      @Override
+      protected ListenableFuture&lt;Response&gt; go(Request request)
+      {
+        ByteBuffer batch = request.getByteBufferData().slice();
+        while (batch.remaining() &gt; 0) {
+          emittedEvents.set(batch.getInt());
+        }
+        return GoHandlers.immediateFuture(EmitterTest.okResponse());
+      }
+    });
+    emitter.start();
+    final CountDownLatch threadsCompleted = new CountDownLatch(nThreads);
+    for (int i = 0; i &lt; nThreads; i++) {
+      final int threadIndex = i;
+      new Thread() {
+        @Override
+        public void run()
+        {
+          IntList events = eventsPerThread.get(threadIndex);
+          List&lt;Batch&gt; eventBatches = eventBatchesPerThread.get(threadIndex);
+          IntEvent event = new IntEvent();
+          for (int i = 0, eventsSize = events.size(); i &lt; eventsSize; i++) {
+            event.index = events.getInt(i);
+            eventBatches.add(emitter.emitAndReturnBatch(event));
+            if (i % 16 == 0) {
+              try {
+                Thread.sleep(10);
+              }
+              catch (InterruptedException e) {
+                throw new RuntimeException(e);
+              }
+            }
+          }
+          threadsCompleted.countDown();
+        }
+      }.start();
+    }
+    threadsCompleted.await();
+    emitter.flush();
+    System.out.println(&quot;Allocated buffers: &quot; + emitter.getTotalAllocatedBuffers());
+    for (int eventIndex = 0; eventIndex &lt; N; eventIndex++) {
+      if (!emittedEvents.get(eventIndex)) {
+        for (int threadIndex = 0; threadIndex &lt; eventsPerThread.size(); threadIndex++) {
+          IntList threadEvents = eventsPerThread.get(threadIndex);
+          int indexOfEvent = threadEvents.indexOf(eventIndex);
+          if (indexOfEvent &gt;= 0) {
+            Batch batch = eventBatchesPerThread.get(threadIndex).get(indexOfEvent);
+            System.err.println(batch);
+            int bufferWatermark = batch.getSealedBufferWatermark();
+            ByteBuffer batchBuffer = ByteBuffer.wrap(batch.buffer);
+            batchBuffer.limit(bufferWatermark);
+            while (batchBuffer.remaining() &gt; 0) {
+              System.err.println(batchBuffer.getInt());
+            }
+            break;
+          }
+        }
+        throw new AssertionError(&quot;event &quot; + eventIndex);
+      }
+    }
+  }
+</code></pre>
+</td><td>
+<strong><code class="large-code packagename">com.metamx.emitter.core.HttpPostEmitter#emitAndReturnBatch:244</code></strong><br>
+<p class="filepath">java-util/src/main/java/com/metamx/emitter/core/HttpPostEmitter.java</p>
+<strong class="seperator">Class</strong>
+<pre><code class="language-java large-code" data-ln-start-from="60">public class HttpPostEmitter implements Flushable, Closeable, Emitter
+{
+</code></pre>
+<strong class="seperator">Method</strong>
+<pre><code class="language-java large-code" data-ln-start-from="217">@VisibleForTesting
+  Batch emitAndReturnBatch(Event event)
+  {
+    awaitStarted();
+
+    final byte[] eventBytes = eventToBytes(event);
+
+    if (eventBytes.length &gt; MAX_EVENT_SIZE) {
+      log.error(
+          &quot;Event too large to emit (%,d &gt; %,d): %s ...&quot;,
+          eventBytes.length,
+          MAX_EVENT_SIZE,
+          StringUtils.fromUtf8(ByteBuffer.wrap(eventBytes), 1024)
+      );
+      return null;
+    }
+
+    if (eventBytes.length &gt; largeEventThreshold) {
+      writeLargeEvent(eventBytes);
+      return null;
+    }
+
+    while (true) {
+      Batch batch = concurrentBatch.get();
+      if (batch == null) {
+        throw new RejectedExecutionException(&quot;Service is closed.&quot;);
+      }
+      if (batch.tryAddEvent(eventBytes)) {
+        return batch;
+      }
+      // Spin loop, until the thread calling onSealExclusive() updates the concurrentBatch. This update becomes visible
+      // eventually, because concurrentBatch.get() is a volatile read.
+    }
+  }
+</code></pre>
+</td></tr>
+<tr>
+<td></td><td>
+<strong><code class="large-code packagename">com.metamx.emitter.core.HttpPostEmitterStressTest$3#run:102</code></strong><br>
+<p class="filepath">java-util/src/test/java/com/metamx/emitter/core/HttpPostEmitterStressTest.java</p>
+<strong class="seperator">Class</strong>
+<pre><code class="language-java large-code" data-ln-start-from="39">public class HttpPostEmitterStressTest
+{
+</code></pre>
+<strong class="seperator">Method</strong>
+<pre><code class="language-java large-code" data-ln-start-from="54">@Test
+  public void eventCountBased() throws InterruptedException, IOException
+  {
+    HttpEmitterConfig config = new HttpEmitterConfig.Builder(&quot;http://foo.bar&quot;)
+        .setFlushMillis(100)
+        .setFlushCount(4)
+        .setBatchingStrategy(BatchingStrategy.ONLY_EVENTS)
+        .setMaxBatchSize(1024 * 1024)
+        // For this test, we don&#x27;t need any batches to be dropped, i. e. &quot;gaps&quot; in data
+        .setBatchQueueSizeLimit(1000)
+        .build();
+    final HttpPostEmitter emitter = new HttpPostEmitter(config, httpClient, objectMapper);
+    int nThreads = Runtime.getRuntime().availableProcessors() * 2;
+    final List&lt;IntList&gt; eventsPerThread = new ArrayList&lt;&gt;(nThreads);
+    final List&lt;List&lt;Batch&gt;&gt; eventBatchesPerThread = new ArrayList&lt;&gt;(nThreads);
+    for (int i = 0; i &lt; nThreads; i++) {
+      eventsPerThread.add(new IntArrayList());
+      eventBatchesPerThread.add(new ArrayList&lt;Batch&gt;());
+    }
+    for (int i = 0; i &lt; N; i++) {
+      eventsPerThread.get(ThreadLocalRandom.current().nextInt(nThreads)).add(i);
+    }
+    final BitSet emittedEvents = new BitSet(N);
+    httpClient.setGoHandler(new GoHandler()
+    {
+      @Override
+      protected ListenableFuture&lt;Response&gt; go(Request request)
+      {
+        ByteBuffer batch = request.getByteBufferData().slice();
+        while (batch.remaining() &gt; 0) {
+          emittedEvents.set(batch.getInt());
+        }
+        return GoHandlers.immediateFuture(EmitterTest.okResponse());
+      }
+    });
+    emitter.start();
+    final CountDownLatch threadsCompleted = new CountDownLatch(nThreads);
+    for (int i = 0; i &lt; nThreads; i++) {
+      final int threadIndex = i;
+      new Thread() {
+        @Override
+        public void run()
+        {
+          IntList events = eventsPerThread.get(threadIndex);
+          List&lt;Batch&gt; eventBatches = eventBatchesPerThread.get(threadIndex);
+          IntEvent event = new IntEvent();
+          for (int i = 0, eventsSize = events.size(); i &lt; eventsSize; i++) {
+            event.index = events.getInt(i);
+            eventBatches.add(emitter.emitAndReturnBatch(event));
+            if (i % 16 == 0) {
+              try {
+                Thread.sleep(10);
+              }
+              catch (InterruptedException e) {
+                throw new RuntimeException(e);
+              }
+            }
+          }
+          threadsCompleted.countDown();
+        }
+      }.start();
+    }
+    threadsCompleted.await();
+    emitter.flush();
+    System.out.println(&quot;Allocated buffers: &quot; + emitter.getTotalAllocatedBuffers());
+    for (int eventIndex = 0; eventIndex &lt; N; eventIndex++) {
+      if (!emittedEvents.get(eventIndex)) {
+        for (int threadIndex = 0; threadIndex &lt; eventsPerThread.size(); threadIndex++) {
+          IntList threadEvents = eventsPerThread.get(threadIndex);
+          int indexOfEvent = threadEvents.indexOf(eventIndex);
+          if (indexOfEvent &gt;= 0) {
+            Batch batch = eventBatchesPerThread.get(threadIndex).get(indexOfEvent);
+            System.err.println(batch);
+            int bufferWatermark = batch.getSealedBufferWatermark();
+            ByteBuffer batchBuffer = ByteBuffer.wrap(batch.buffer);
+            batchBuffer.limit(bufferWatermark);
+            while (batchBuffer.remaining() &gt; 0) {
+              System.err.println(batchBuffer.getInt());
+            }
+            break;
+          }
+        }
+        throw new AssertionError(&quot;event &quot; + eventIndex);
+      }
+    }
+  }
+</code></pre>
+</td></tr>
+
+  </tbody>
+</table>
+</div>
+
+  </body>
+</html>
